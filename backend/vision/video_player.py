@@ -106,6 +106,7 @@ class VideoSimulationPlayer:
     """
     Manages continuous video playback / live camera feed, OpenCV popup window rendering,
     and automatic state synchronization with the Network Engine (local in-memory or remote HTTP).
+    Supports headless execution in cloud environments (Render/Heroku/Docker).
     """
 
     def __init__(
@@ -115,13 +116,15 @@ class VideoSimulationPlayer:
         network_engine: Optional[TrafficNetworkEngine] = None,
         server_url: Optional[str] = None,
         target_node_id: str = "Node A",
-        window_title: str = "AI Vision - Live Area Occupancy"
+        window_title: str = "AI Vision - Live Area Occupancy",
+        headless: bool = False
     ):
         self.video_source = video_path if video_path is not None else video_source
         self.network_engine = network_engine
         self.server_url = server_url.rstrip("/") if server_url else None
         self.target_node_id = target_node_id
         self.window_title = window_title
+        self.headless = headless or os.environ.get("HEADLESS", "false").lower() in ("true", "1")
         self.analyzer = AreaOccupancyAnalyzer()
         self.is_running = False
         self._thread: Optional[threading.Thread] = None
@@ -169,7 +172,7 @@ class VideoSimulationPlayer:
     def run_loop(self) -> None:
         """
         Main video loop: reads frames, calculates area occupancy, draws masks,
-        updates network engine (locally or remotely), and renders cv2.imshow popup window.
+        updates network engine (locally or remotely), and renders cv2.imshow popup window if not headless.
         """
         source = self._resolve_source()
         is_live_camera = isinstance(source, int)
@@ -177,6 +180,8 @@ class VideoSimulationPlayer:
         print(f"[Vision Player] Opening video source: {source}")
         if self.server_url:
             print(f"[Vision Player] 📡 Remote Server Target: {self.server_url} (Node: {self.target_node_id})")
+        if self.headless:
+            print("[Vision Player] ☁️ Running in Headless Cloud Mode (GUI display disabled).")
         
         cap = cv2.VideoCapture(source)
 
@@ -191,8 +196,9 @@ class VideoSimulationPlayer:
             self._sender_thread = threading.Thread(target=self._telemetry_sender_worker, daemon=True)
             self._sender_thread.start()
 
-        print(f"[Vision Player] Window active: '{self.window_title}'")
-        print("                -> Press 'q' or 'ESC' on the popup window to stop.")
+        if not self.headless:
+            print(f"[Vision Player] Window active: '{self.window_title}'")
+            print("                -> Press 'q' or 'ESC' on the popup window to stop.")
         
         frame_counter = 0
 
@@ -250,7 +256,7 @@ class VideoSimulationPlayer:
                 # 3. Add Split-Screen Header Watermark
                 cv2.rectangle(annotated_frame, (0, 0), (annotated_frame.shape[1], 48), (15, 18, 24), -1)
                 src_label = f"CAMERA {source}" if is_live_camera else f"FEED: {self.target_node_id}"
-                net_label = f"STREAMING TO -> {self.server_url}" if self.server_url else "STANDALONE LOCAL"
+                net_label = f"STREAMING TO -> {self.server_url}" if self.server_url else ("CLOUD STREAM" if self.headless else "STANDALONE LOCAL")
                 
                 cv2.putText(
                     annotated_frame,
@@ -271,18 +277,29 @@ class VideoSimulationPlayer:
                     1
                 )
 
-                # 4. Display Physical Popup Window
-                cv2.imshow(self.window_title, annotated_frame)
-
-                # 5. Smooth waitKey (approx 30-35 FPS playback)
-                key = cv2.waitKey(25) & 0xFF
-                if key == ord('q') or key == 27:
-                    print("[Vision Player] Closed by user.")
-                    break
+                # 4. Display Physical Popup Window if not headless
+                if not self.headless:
+                    try:
+                        cv2.imshow(self.window_title, annotated_frame)
+                        key = cv2.waitKey(25) & 0xFF
+                        if key == ord('q') or key == 27:
+                            print("[Vision Player] Closed by user.")
+                            break
+                    except Exception:
+                        # Auto fallback to headless if cv2.imshow fails in non-GUI environment
+                        self.headless = True
+                        time.sleep(0.04)
+                else:
+                    # Maintain smooth 25 FPS frame pacing in headless cloud mode
+                    time.sleep(0.04)
 
         finally:
             cap.release()
-            cv2.destroyAllWindows()
+            if not self.headless:
+                try:
+                    cv2.destroyAllWindows()
+                except Exception:
+                    pass
             self.is_running = False
             if self.server_url:
                 try:

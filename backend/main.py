@@ -36,20 +36,7 @@ from backend.network.graph_engine import TrafficNetworkEngine
 from backend.emergency.corridor import EmergencyCorridorManager
 from backend.vision.video_player import VideoSimulationPlayer
 
-app = FastAPI(
-    title="Smart Traffic Management System API",
-    description="Vision-Driven Area Occupancy, Predictive Network Balancing, and Emergency Green Corridor System",
-    version="1.0.0",
-)
-
-# Enable CORS for all origins (allowing double-clicking local index.html directly)
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=["*"],
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
+from contextlib import asynccontextmanager
 
 # Base directories
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -63,6 +50,35 @@ video_player = VideoSimulationPlayer(
     video_path=os.path.join(BASE_DIR, "data", "heavy_traffic.mp4"),
     network_engine=network_engine,
     target_node_id="Node A",
+)
+
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    """Auto-start background video simulation loop in cloud environments."""
+    auto_start = os.environ.get("AUTO_START_SIMULATION", "true").lower() in ("true", "1")
+    if auto_start and not video_player.is_running:
+        video_player.headless = True
+        video_player.start_background()
+    yield
+    if video_player.is_running:
+        video_player.stop()
+
+
+app = FastAPI(
+    title="Smart Traffic Management System API",
+    description="Vision-Driven Area Occupancy, Predictive Network Balancing, and Emergency Green Corridor System",
+    version="1.0.0",
+    lifespan=lifespan,
+)
+
+# Enable CORS for all origins (allowing double-clicking local index.html directly)
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
 )
 
 

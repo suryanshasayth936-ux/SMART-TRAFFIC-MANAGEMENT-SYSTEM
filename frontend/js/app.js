@@ -1,12 +1,23 @@
-/**
- * Smart Traffic Command Center - Frontend Logic
- * Connects to FastAPI Backend via Fetch API with CORS & file:// protocol fallback
- */
+// Dynamic Backend URL resolution:
+// 1. URL Query parameter: ?backend=https://your-backend.onrender.com
+// 2. localStorage saved setting
+// 3. Current host origin or localhost:8000 fallback
+const urlParams = new URLSearchParams(window.location.search);
+const paramBackend = urlParams.get('backend');
+if (paramBackend) {
+    localStorage.setItem('traffic_backend_url', paramBackend.replace(/\/+$/, ''));
+}
 
-// Fallback to http://127.0.0.1:8000 if opened directly via file:// in browser
-const API_BASE = (window.location.protocol === 'file:' || !window.location.host) 
-    ? 'http://127.0.0.1:8000' 
-    : window.location.origin;
+function getApiBase() {
+    const saved = localStorage.getItem('traffic_backend_url');
+    if (saved) return saved;
+    if (window.location.protocol === 'file:' || !window.location.host) {
+        return 'http://127.0.0.1:8000';
+    }
+    return window.location.origin;
+}
+
+let API_BASE = getApiBase();
 
 // State Tracking
 let isEmergencyActive = false;
@@ -22,6 +33,7 @@ const eventLogsBody = document.getElementById('eventLogsBody');
 const btnEmergencyOverride = document.getElementById('btnEmergencyOverride');
 const btnDeactivateEmergency = document.getElementById('btnDeactivateEmergency');
 const btnResetNetwork = document.getElementById('btnResetNetwork');
+const btnConfigServer = document.getElementById('btnConfigServer');
 
 // Initialize on Load
 document.addEventListener('DOMContentLoaded', () => {
@@ -33,6 +45,11 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 function initEventListeners() {
+    // Server URL Config Button (for Render / Vercel deployment)
+    if (btnConfigServer) {
+        btnConfigServer.addEventListener('click', handleConfigureServer);
+    }
+
     // Emergency Override Trigger
     btnEmergencyOverride.addEventListener('click', handleEmergencyOverride);
     
@@ -68,6 +85,29 @@ function initEventListeners() {
 }
 
 /**
+ * Configure Backend API Server URL (for Vercel -> Render cross-cloud connection)
+ */
+function handleConfigureServer() {
+    const current = localStorage.getItem('traffic_backend_url') || API_BASE;
+    const input = prompt(
+        "Enter your Backend API Server URL (e.g. your Render URL or local IP):\n\nExample: https://smart-traffic-backend.onrender.com\nOr local: http://192.168.1.50:8000",
+        current
+    );
+    if (input !== null) {
+        const cleaned = input.trim().replace(/\/+$/, '');
+        if (cleaned) {
+            localStorage.setItem('traffic_backend_url', cleaned);
+            API_BASE = cleaned;
+        } else {
+            localStorage.removeItem('traffic_backend_url');
+            API_BASE = getApiBase();
+        }
+        updateApiStatus(false, "CONNECTING...");
+        fetchNetworkStatus();
+    }
+}
+
+/**
  * Start background polling of network status (every 350ms for ultra-smooth live video sync)
  */
 function startPolling() {
@@ -94,15 +134,27 @@ async function fetchNetworkStatus() {
     }
 }
 
-function updateApiStatus(isOnline) {
+function updateApiStatus(isOnline, customText = null) {
+    if (!apiStatusBadge) return;
+    
+    let hostLabel = 'PORT 8000';
+    try {
+        const parsed = new URL(API_BASE);
+        hostLabel = parsed.host.toUpperCase();
+    } catch (e) {
+        hostLabel = API_BASE.toUpperCase();
+    }
+
     if (isOnline) {
         apiStatusBadge.className = 'badge online';
-        apiStatusBadge.innerText = 'ONLINE (PORT 8000)';
+        apiStatusBadge.innerText = customText || `ONLINE (${hostLabel})`;
+        apiStatusBadge.style.background = 'rgba(16, 185, 129, 0.15)';
+        apiStatusBadge.style.color = '#10b981';
     } else {
         apiStatusBadge.className = 'badge';
         apiStatusBadge.style.background = 'rgba(239, 68, 68, 0.2)';
         apiStatusBadge.style.color = '#ef4444';
-        apiStatusBadge.innerText = 'DISCONNECTED (WAITING FOR BACKEND)';
+        apiStatusBadge.innerText = customText || `OFFLINE (${hostLabel})`;
     }
 }
 

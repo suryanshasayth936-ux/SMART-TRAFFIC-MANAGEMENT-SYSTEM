@@ -29,19 +29,30 @@ A real-time, AI-powered Smart Traffic Management System built with **Python (Fas
 
 ---
 
-## 🚀 Live Split-Screen Demo Presentation
+## ☁️ 1-Click Cloud Deployment (Render Backend + Vercel Frontend)
 
-To run the complete split-screen demo (OpenCV popup window + background FastAPI server + auto-opened web dashboard):
+Run the entire system in the cloud with zero terminal commands needed for anyone visiting your website:
 
-```bash
-source .venv/bin/activate
-python run_simulation.py
-```
+### 1. Deploy Backend to Render:
+1. Push this repository to GitHub.
+2. Log into [render.com](https://render.com) and click **New + Web Service**.
+3. Connect your repository.
+4. Render automatically detects `render.yaml` / `Procfile`:
+   - **Build Command:** `pip install -r requirements.txt`
+   - **Start Command:** `uvicorn backend.main:app --host 0.0.0.0 --port $PORT`
+   - **Environment Variables:** `HEADLESS=true`, `AUTO_START_SIMULATION=true`
+5. Click **Deploy Web Service** and copy your backend URL (e.g. `https://smart-traffic-backend.onrender.com`).
 
-- **OpenCV Window:** Pops up with title `"AI Vision - Live Area Occupancy"`, playing `data/heavy_traffic.mp4` with vehicle masks and real-time telemetry HUD.
-- **FastAPI Server:** Runs in a background thread on `http://127.0.0.1:8000` with full CORS enabled.
-- **Web Dashboard:** Opens in your browser automatically and updates live as the video streams. (You can also double-click `frontend/index.html` directly).
-- **Exit:** Press `'q'` or `'ESC'` in the OpenCV window to close the simulation.
+### 2. Deploy Frontend to Vercel:
+1. Log into [vercel.com](https://vercel.com) and click **Add New + Project**.
+2. Select your repository.
+3. Vercel automatically detects `vercel.json`. Click **Deploy**.
+4. Open your live Vercel URL (e.g. `https://smart-traffic.vercel.app`).
+
+### 3. Connect Frontend to Backend:
+- On your Vercel dashboard, click **"⚙️ Server Config"** in the top header and paste your Render URL (`https://smart-traffic-backend.onrender.com`).
+- Or simply open the link with: `https://smart-traffic.vercel.app?backend=https://smart-traffic-backend.onrender.com`.
+- **Done!** The dashboard will immediately stream live video frames, dynamic signals, and balancing metrics to anyone in the world!
 
 ---
 

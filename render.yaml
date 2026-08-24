@@ -1,0 +1,13 @@
+services:
+  - type: web
+    name: smart-traffic-backend
+    runtime: python
+    buildCommand: pip install -r requirements.txt
+    startCommand: uvicorn backend.main:app --host 0.0.0.0 --port $PORT
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.10.13
+      - key: HEADLESS
+        value: "true"
+      - key: AUTO_START_SIMULATION
+        value: "true"
