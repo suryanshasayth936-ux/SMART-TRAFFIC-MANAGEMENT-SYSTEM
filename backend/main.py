@@ -186,6 +186,7 @@ def update_node_occupancy(payload: NodeOccupancyUpdateRequest):
         result = network_engine.update_node_occupancy(
             node_id=payload.node_id,
             occupancy_pct=payload.occupancy_percentage,
+            latest_frame_b64=payload.latest_frame_b64,
         )
         return {
             "status": "success",

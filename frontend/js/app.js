@@ -68,11 +68,11 @@ function initEventListeners() {
 }
 
 /**
- * Start background polling of network status (every 1.5s for fast live sync)
+ * Start background polling of network status (every 350ms for ultra-smooth live video sync)
  */
 function startPolling() {
     if (pollingInterval) clearInterval(pollingInterval);
-    pollingInterval = setInterval(fetchNetworkStatus, 1500);
+    pollingInterval = setInterval(fetchNetworkStatus, 350);
 }
 
 /**
@@ -107,9 +107,12 @@ function updateApiStatus(isOnline) {
 }
 
 /**
- * Render intersection cards for Node A, Node B, Node C
+ * Render intersection cards for Node A, Node B, Node C & Live Vision Stream
  */
 function renderNodes(nodes) {
+    let activeLiveFrame = null;
+    let activeLiveNodeId = null;
+
     for (const [nodeId, nodeData] of Object.entries(nodes)) {
         const idSanitized = nodeId.replace(' ', '-');
         
@@ -121,6 +124,30 @@ function renderNodes(nodes) {
         const slider = document.getElementById(`slider-${idSanitized}`);
 
         if (!card) continue;
+
+        // Capture live frame if node is actively streaming from Mac 2
+        if (nodeData.is_live && nodeData.latest_frame_b64) {
+            activeLiveFrame = nodeData.latest_frame_b64;
+            activeLiveNodeId = nodeId;
+        }
+
+        // Live Node Badge
+        let liveBadge = card.querySelector('.live-stream-tag');
+        if (nodeData.is_live) {
+            if (!liveBadge) {
+                liveBadge = document.createElement('span');
+                liveBadge.className = 'live-stream-tag badge online';
+                liveBadge.style.fontSize = '0.65rem';
+                liveBadge.style.marginLeft = '0.5rem';
+                liveBadge.style.animation = 'pulse 1.5s infinite';
+                const nodeIdentity = card.querySelector('.node-identity');
+                if (nodeIdentity) nodeIdentity.appendChild(liveBadge);
+            }
+            liveBadge.innerText = '🟢 LIVE MAC 2 FEED';
+            liveBadge.style.display = 'inline-block';
+        } else if (liveBadge) {
+            liveBadge.style.display = 'none';
+        }
 
         // Update timer
         if (timerEl) timerEl.innerText = nodeData.current_timer;
@@ -162,6 +189,32 @@ function renderNodes(nodes) {
             boostBadge.innerHTML = `<span style="color: #ef4444; font-weight: 700;">🔥 CONGESTED (${nodeData.occupancy_percentage.toFixed(0)}%)</span>`;
         } else {
             boostBadge.innerHTML = `<span>● Baseline Dynamic (${nodeData.base_timer}s)</span>`;
+        }
+    }
+
+    // Automatically update Section 4 (Vision Lab) with live stream from Mac 2
+    if (activeLiveFrame) {
+        const previewImg = document.getElementById('visionPreviewImg');
+        const placeholder = document.getElementById('visionPlaceholder');
+        const statusLabel = document.getElementById('visionStatusLabel');
+        const occEl = document.getElementById('visionMetricOcc');
+        const timerElVis = document.getElementById('visionMetricTimer');
+
+        if (previewImg) {
+            previewImg.src = `data:image/jpeg;base64,${activeLiveFrame}`;
+            previewImg.style.display = 'block';
+        }
+        if (placeholder) placeholder.style.display = 'none';
+        if (statusLabel) {
+            statusLabel.innerText = `📡 LIVE VISION FEED (${activeLiveNodeId})`;
+            statusLabel.className = 'badge online';
+            statusLabel.style.background = 'rgba(16, 185, 129, 0.2)';
+            statusLabel.style.color = '#10b981';
+        }
+        if (nodes[activeLiveNodeId]) {
+            const liveData = nodes[activeLiveNodeId];
+            if (occEl) occEl.innerText = `${liveData.occupancy_percentage.toFixed(1)}%`;
+            if (timerElVis) timerElVis.innerText = `${liveData.current_timer}s (DYNAMIC)`;
         }
     }
 }

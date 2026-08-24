@@ -99,6 +99,7 @@ def generate_heavy_traffic_video(output_path: str = "data/heavy_traffic.mp4", du
 
 import requests
 import queue
+import base64
 
 
 class VideoSimulationPlayer:
@@ -150,16 +151,19 @@ class VideoSimulationPlayer:
             if item is None:
                 break
 
-            node_id, occupancy_pct = item
+            node_id, occupancy_pct, frame_b64 = item
             if self.server_url:
                 endpoint = f"{self.server_url}/api/v1/network/update-node"
                 try:
-                    resp = requests.post(
-                        endpoint,
-                        json={"node_id": node_id, "occupancy_percentage": occupancy_pct},
-                        timeout=1.0
-                    )
-                except Exception as e:
+                    payload = {
+                        "node_id": node_id,
+                        "occupancy_percentage": occupancy_pct,
+                    }
+                    if frame_b64:
+                        payload["latest_frame_b64"] = frame_b64
+
+                    requests.post(endpoint, json=payload, timeout=1.0)
+                except Exception:
                     pass
 
     def run_loop(self) -> None:
@@ -218,9 +222,18 @@ class VideoSimulationPlayer:
 
                 # 2. Synchronize with Network Engine every 4 frames
                 if frame_counter % 4 == 0:
+                    # Encode frame base64 JPEG thumbnail for live Web UI
+                    frame_b64 = None
+                    try:
+                        thumb = cv2.resize(annotated_frame, (480, int(annotated_frame.shape[0] * 480 / annotated_frame.shape[1])))
+                        _, buf = cv2.imencode('.jpg', thumb, [int(cv2.IMWRITE_JPEG_QUALITY), 65])
+                        frame_b64 = base64.b64encode(buf).decode('utf-8')
+                    except Exception:
+                        pass
+
                     # In-memory local engine sync
                     if self.network_engine:
-                        self.network_engine.update_node_occupancy(self.target_node_id, occupancy_pct)
+                        self.network_engine.update_node_occupancy(self.target_node_id, occupancy_pct, latest_frame_b64=frame_b64)
                     
                     # Remote HTTP server sync
                     if self.server_url:
@@ -230,7 +243,7 @@ class VideoSimulationPlayer:
                                     self._telemetry_queue.get_nowait()
                                 except queue.Empty:
                                     pass
-                            self._telemetry_queue.put_nowait((self.target_node_id, occupancy_pct))
+                            self._telemetry_queue.put_nowait((self.target_node_id, occupancy_pct, frame_b64))
                         except queue.Full:
                             pass
 

@@ -59,6 +59,8 @@ class TrafficNetworkEngine:
                 boost_reason=None,
                 is_emergency=False,
                 current_signal="GREEN",
+                latest_frame_b64=None,
+                last_updated_time=None,
             )
 
         # Directed arterial flow: Node A -> Node B -> Node C
@@ -76,8 +78,14 @@ class TrafficNetworkEngine:
     def get_all_nodes_status(self) -> Dict[str, NodeStatus]:
         """Return standardized status models for all intersections."""
         statuses = {}
+        now = datetime.now()
         for node_id in self.graph.nodes:
             data = self.graph.nodes[node_id]
+            last_up = data.get("last_updated_time")
+            is_live = False
+            if last_up is not None:
+                is_live = (now - last_up).total_seconds() < 4.0
+
             statuses[node_id] = NodeStatus(
                 node_id=node_id,
                 name=data["name"],
@@ -88,6 +96,8 @@ class TrafficNetworkEngine:
                 boost_reason=data.get("boost_reason"),
                 is_emergency=data.get("is_emergency", False),
                 current_signal=data.get("current_signal", "GREEN"),
+                latest_frame_b64=data.get("latest_frame_b64"),
+                is_live=is_live,
             )
         return statuses
 
@@ -98,7 +108,7 @@ class TrafficNetworkEngine:
             for u, v in self.graph.edges
         ]
 
-    def update_node_occupancy(self, node_id: str, occupancy_pct: float) -> Dict[str, Any]:
+    def update_node_occupancy(self, node_id: str, occupancy_pct: float, latest_frame_b64: Optional[str] = None) -> Dict[str, Any]:
         """
         Update the area occupancy of an intersection and execute predictive network balancing.
         If occupancy > 75%, automatically boost downstream intersection(s) by 20%.
@@ -109,6 +119,9 @@ class TrafficNetworkEngine:
         node_data = self.graph.nodes[node_id]
         old_occ = node_data["occupancy_percentage"]
         node_data["occupancy_percentage"] = occupancy_pct
+        node_data["last_updated_time"] = datetime.now()
+        if latest_frame_b64:
+            node_data["latest_frame_b64"] = latest_frame_b64
 
         # Recalculate node's own base timer from occupancy
         base_timer = calculate_green_light_timer(occupancy_pct)

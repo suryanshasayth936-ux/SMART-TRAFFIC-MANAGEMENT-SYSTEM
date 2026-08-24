@@ -45,11 +45,15 @@ class NodeStatus(BaseModel):
     boost_reason: Optional[str] = None
     is_emergency: bool = False
     current_signal: str = "GREEN"  # GREEN, YELLOW, RED
+    latest_frame_b64: Optional[str] = None
+    is_live: bool = False
 
 
 class NodeOccupancyUpdateRequest(BaseModel):
     node_id: str = Field(..., description="Intersection Node ID (e.g., 'Node A', 'Node B', 'Node C')")
     occupancy_percentage: float = Field(..., ge=0.0, le=100.0)
+    latest_frame_b64: Optional[str] = Field(default=None, description="Optional base64 JPEG of annotated video frame")
+
 
 
 class NetworkStatusResponse(BaseModel):
