@@ -1,0 +1,357 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Smart Traffic Command Center | AI Area-Occupancy & Green Corridor System</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/css/styles.css">
+</head>
+<body class="dark-theme">
+    <!-- Top Command Navigation -->
+    <header class="header">
+        <div class="header-left">
+            <div class="logo-badge">
+                <span class="status-dot pulsing"></span>
+                <span class="logo-icon">🚦</span>
+                <div class="logo-text">
+                    <h1>SMART TRAFFIC COMMAND CENTER</h1>
+                    <p class="subtitle">AI Area-Occupancy Vision & Predictive Green Wave Grid</p>
+                </div>
+            </div>
+        </div>
+        <div class="header-center">
+            <div id="corridorStatusBanner" class="corridor-banner normal">
+                <span class="banner-icon">⚡</span>
+                <span id="corridorStatusText">SYSTEM ACTIVE • DYNAMIC BALANCING MODE</span>
+            </div>
+        </div>
+        <div class="header-right">
+            <div class="server-status">
+                <span class="label">API ENGINE:</span>
+                <span id="apiStatusBadge" class="badge online">ONLINE (PORT 8000)</span>
+            </div>
+            <button id="btnResetNetwork" class="btn-secondary" title="Reset all nodes to baseline">
+                <span class="icon">↺</span> Reset Grid
+            </button>
+        </div>
+    </header>
+
+    <!-- Emergency Active Alert Strip (Hidden by default) -->
+    <div id="emergencyAlertStrip" class="emergency-strip hidden">
+        <div class="strip-content">
+            <span class="pulse-warning">🚨</span>
+            <strong>EMERGENCY GREEN CORRIDOR IN PROGRESS:</strong>
+            <span id="emergencyDetailsText">Ambulance AMB-108 has forced priority green wave at Node A</span>
+            <button id="btnDeactivateEmergency" class="btn-clear-override">RELEASE OVERRIDE</button>
+        </div>
+    </div>
+
+    <!-- Main Dashboard Container -->
+    <main class="dashboard-grid">
+        <!-- SECTION 1: Live Status Feed of Intersections A, B, C -->
+        <section class="section-card intersections-section">
+            <div class="section-header">
+                <div class="title-with-icon">
+                    <span class="sec-icon">📡</span>
+                    <h2>1. Live Intersection Telemetry (Nodes A → B → C)</h2>
+                </div>
+                <div class="network-route-indicator">
+                    <span class="node-pill">Node A (Uptown)</span>
+                    <span class="route-arrow">➔ 850m ➔</span>
+                    <span class="node-pill">Node B (Central Hub)</span>
+                    <span class="route-arrow">➔ 920m ➔</span>
+                    <span class="node-pill">Node C (Downtown)</span>
+                </div>
+            </div>
+
+            <!-- 3 Intersection Cards Grid -->
+            <div class="nodes-grid" id="nodesContainer">
+                <!-- Node A Card -->
+                <div class="node-card" id="card-Node-A">
+                    <div class="node-card-header">
+                        <div class="node-identity">
+                            <span class="node-badge">NODE A</span>
+                            <h3>North Gate (Uptown)</h3>
+                        </div>
+                        <div class="signal-housing" id="signal-Node-A">
+                            <span class="signal-lamp red"></span>
+                            <span class="signal-lamp yellow"></span>
+                            <span class="signal-lamp green active"></span>
+                        </div>
+                    </div>
+                    <div class="timer-display-box">
+                        <div class="timer-value-wrap">
+                            <span class="timer-value" id="timer-Node-A">20</span>
+                            <span class="timer-unit">SEC</span>
+                        </div>
+                        <div class="timer-label">DYNAMIC GREEN TIMER</div>
+                    </div>
+                    <div class="occupancy-meter-block">
+                        <div class="meter-labels">
+                            <span>Road Area Occupancy</span>
+                            <strong id="occVal-Node-A">30.0%</strong>
+                        </div>
+                        <div class="meter-bar-track">
+                            <div class="meter-bar-fill" id="occBar-Node-A" style="width: 30%;"></div>
+                        </div>
+                    </div>
+                    <div class="boost-indicator-badge" id="boostBadge-Node-A">
+                        <span>● Baseline Timed</span>
+                    </div>
+                    <div class="node-control-slider-wrap">
+                        <label for="slider-Node-A">Simulate Traffic Density:</label>
+                        <div class="slider-row">
+                            <input type="range" id="slider-Node-A" min="0" max="100" value="30" class="occupancy-slider" data-node="Node A">
+                            <button class="btn-surge" onclick="simulateSurge('Node A', 82)">Surge (82%)</button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Node B Card -->
+                <div class="node-card" id="card-Node-B">
+                    <div class="node-card-header">
+                        <div class="node-identity">
+                            <span class="node-badge">NODE B</span>
+                            <h3>Central Hub (Midtown)</h3>
+                        </div>
+                        <div class="signal-housing" id="signal-Node-B">
+                            <span class="signal-lamp red"></span>
+                            <span class="signal-lamp yellow"></span>
+                            <span class="signal-lamp green active"></span>
+                        </div>
+                    </div>
+                    <div class="timer-display-box">
+                        <div class="timer-value-wrap">
+                            <span class="timer-value" id="timer-Node-B">28</span>
+                            <span class="timer-unit">SEC</span>
+                        </div>
+                        <div class="timer-label">DYNAMIC GREEN TIMER</div>
+                    </div>
+                    <div class="occupancy-meter-block">
+                        <div class="meter-labels">
+                            <span>Road Area Occupancy</span>
+                            <strong id="occVal-Node-B">40.0%</strong>
+                        </div>
+                        <div class="meter-bar-track">
+                            <div class="meter-bar-fill" id="occBar-Node-B" style="width: 40%;"></div>
+                        </div>
+                    </div>
+                    <div class="boost-indicator-badge" id="boostBadge-Node-B">
+                        <span>● Baseline Timed</span>
+                    </div>
+                    <div class="node-control-slider-wrap">
+                        <label for="slider-Node-B">Simulate Traffic Density:</label>
+                        <div class="slider-row">
+                            <input type="range" id="slider-Node-B" min="0" max="100" value="40" class="occupancy-slider" data-node="Node B">
+                            <button class="btn-surge" onclick="simulateSurge('Node B', 85)">Surge (85%)</button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Node C Card -->
+                <div class="node-card" id="card-Node-C">
+                    <div class="node-card-header">
+                        <div class="node-identity">
+                            <span class="node-badge">NODE C</span>
+                            <h3>South Terminal (Downtown)</h3>
+                        </div>
+                        <div class="signal-housing" id="signal-Node-C">
+                            <span class="signal-lamp red"></span>
+                            <span class="signal-lamp yellow"></span>
+                            <span class="signal-lamp green active"></span>
+                        </div>
+                    </div>
+                    <div class="timer-display-box">
+                        <div class="timer-value-wrap">
+                            <span class="timer-value" id="timer-Node-C">24</span>
+                            <span class="timer-unit">SEC</span>
+                        </div>
+                        <div class="timer-label">DYNAMIC GREEN TIMER</div>
+                    </div>
+                    <div class="occupancy-meter-block">
+                        <div class="meter-labels">
+                            <span>Road Area Occupancy</span>
+                            <strong id="occVal-Node-C">35.0%</strong>
+                        </div>
+                        <div class="meter-bar-track">
+                            <div class="meter-bar-fill" id="occBar-Node-C" style="width: 35%;"></div>
+                        </div>
+                    </div>
+                    <div class="boost-indicator-badge" id="boostBadge-Node-C">
+                        <span>● Baseline Timed</span>
+                    </div>
+                    <div class="node-control-slider-wrap">
+                        <label for="slider-Node-C">Simulate Traffic Density:</label>
+                        <div class="slider-row">
+                            <input type="range" id="slider-Node-C" min="0" max="100" value="35" class="occupancy-slider" data-node="Node C">
+                            <button class="btn-surge" onclick="simulateSurge('Node C', 88)">Surge (88%)</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- SECTION 2: Emergency "Green Corridor" Control Panel -->
+        <section class="section-card emergency-section">
+            <div class="section-header">
+                <div class="title-with-icon">
+                    <span class="sec-icon red-icon">🚨</span>
+                    <h2>2. Emergency "Green Corridor" Command</h2>
+                </div>
+                <span class="priority-tag">MODULE 3 PRIORITY API</span>
+            </div>
+
+            <div class="emergency-content">
+                <p class="emergency-desc">
+                    Force an immediate <strong>90-Second Green Wave</strong> along the corridor path to grant emergency response vehicles zero-stop clearance.
+                </p>
+
+                <div class="emergency-form-grid">
+                    <div class="form-group">
+                        <label for="ambulanceSelect">Emergency Vehicle ID:</label>
+                        <select id="ambulanceSelect" class="form-input">
+                            <option value="AMB-108">AMB-108 (Trauma Ambulance)</option>
+                            <option value="AMB-911">AMB-911 (Cardiac Unit)</option>
+                            <option value="FIRE-04">FIRE-04 (First Responder)</option>
+                            <option value="POLICE-01">POLICE-01 (Escort)</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="targetNodeSelect">Entry Intersection:</label>
+                        <select id="targetNodeSelect" class="form-input">
+                            <option value="Node A">Node A (North Gate / Uptown)</option>
+                            <option value="Node B">Node B (Central Hub / Midtown)</option>
+                            <option value="Node C">Node C (South Terminal / Downtown)</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="gpsCoordsInput">GPS Telemetry (Simulated):</label>
+                        <input type="text" id="gpsCoordsInput" class="form-input mono" value="28.6139° N, 77.2090° E" readonly>
+                    </div>
+                </div>
+
+                <!-- Big Red Emergency Override Button -->
+                <div class="emergency-btn-wrap">
+                    <button id="btnEmergencyOverride" class="btn-emergency-override">
+                        <span class="glow-ring"></span>
+                        <span class="btn-icon">⚡</span>
+                        <span class="btn-text">TRIGGER EMERGENCY GREEN CORRIDOR</span>
+                    </button>
+                </div>
+            </div>
+        </section>
+
+        <!-- SECTION 3: Live Event & Audit Log -->
+        <section class="section-card logs-section">
+            <div class="section-header">
+                <div class="title-with-icon">
+                    <span class="sec-icon">📜</span>
+                    <h2>3. Real-Time Network & Balancing Events</h2>
+                </div>
+                <span class="live-pulse-badge">● LIVE STREAM</span>
+            </div>
+
+            <div class="log-table-container">
+                <table class="log-table">
+                    <thead>
+                        <tr>
+                            <th style="width: 120px;">Timestamp</th>
+                            <th style="width: 140px;">Category</th>
+                            <th>Event Description & System Action</th>
+                        </tr>
+                    </thead>
+                    <tbody id="eventLogsBody">
+                        <tr>
+                            <td class="mono">[INITIALIZING]</td>
+                            <td><span class="badge info">SYSTEM</span></td>
+                            <td>Connecting to Smart Traffic Network Engine...</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </section>
+
+        <!-- SECTION 4: OpenCV Area-Occupancy Vision Lab -->
+        <section class="section-card vision-lab-section">
+            <div class="section-header">
+                <div class="title-with-icon">
+                    <span class="sec-icon">👁️</span>
+                    <h2>4. OpenCV Area-Occupancy Vision Lab (Module 1)</h2>
+                </div>
+                <span class="badge vision-badge">OPENCV ROI MASKING</span>
+            </div>
+
+            <div class="vision-lab-grid">
+                <div class="vision-preview-box">
+                    <div class="preview-header">
+                        <span>Road Camera Feed & Segmentation Mask Overlay</span>
+                        <span id="visionStatusLabel" class="badge ready">READY</span>
+                    </div>
+                    <div class="preview-image-wrap">
+                        <img id="visionPreviewImg" src="" alt="Traffic Camera Segmentation Mask" class="vision-img">
+                        <div id="visionPlaceholder" class="vision-placeholder">
+                            <span class="placeholder-icon">📷</span>
+                            <p>Click a test preset below or upload a frame to view OpenCV Area-Occupancy masking</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="vision-controls-box">
+                    <h3>Interactive Vision Test Presets</h3>
+                    <p class="desc">Calculates road surface area covered by vehicle mass vs simple bounding box counting.</p>
+
+                    <div class="preset-buttons-grid">
+                        <button class="btn-preset" onclick="testSyntheticFrame(30)">
+                            <strong>30% Low Traffic</strong>
+                            <span>Expected: ~20s Green</span>
+                        </button>
+                        <button class="btn-preset" onclick="testSyntheticFrame(55)">
+                            <strong>55% Moderate Traffic</strong>
+                            <span>Expected: ~40s Green</span>
+                        </button>
+                        <button class="btn-preset highlight" onclick="testSyntheticFrame(80)">
+                            <strong>80% Heavy Congestion</strong>
+                            <span>Expected: ~60s Green</span>
+                        </button>
+                    </div>
+
+                    <div class="custom-upload-box">
+                        <label for="cameraFileInput" class="btn-upload">
+                            📁 Upload Custom Road Frame
+                        </label>
+                        <input type="file" id="cameraFileInput" accept="image/*" style="display: none;">
+                        <span id="fileNameLabel" class="file-name">No file chosen</span>
+                    </div>
+
+                    <div class="vision-metrics-card" id="visionMetricsCard">
+                        <div class="metric-row">
+                            <span>Calculated Area Occupancy:</span>
+                            <strong id="visionMetricOcc" class="highlight-val">--%</strong>
+                        </div>
+                        <div class="metric-row">
+                            <span>Dynamic Green Signal:</span>
+                            <strong id="visionMetricTimer" class="highlight-val">--s</strong>
+                        </div>
+                        <div class="metric-row">
+                            <span>Vehicle Pixels in ROI:</span>
+                            <span id="visionMetricPx">-- / -- px</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <p>Smart Traffic Management System • Python (FastAPI, OpenCV, NetworkX) + Vanilla JS Command Center</p>
+    </footer>
+
+    <script src="/js/app.js"></script>
+</body>
+</html>

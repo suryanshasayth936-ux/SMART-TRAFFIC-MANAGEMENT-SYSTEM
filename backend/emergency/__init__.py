@@ -1,0 +1,1 @@
+"""Emergency Green Corridor package."""
