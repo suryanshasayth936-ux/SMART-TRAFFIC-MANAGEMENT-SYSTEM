@@ -121,3 +121,21 @@ Project/
 ├── requirements.txt            # Dependency specifications
 └── README.md                   # System documentation
 ```
+
+//--Render Link--//
+ https://smart-traffic-ui-nine.vercel.app?backend=https://smart-traffic-management-system-qlkz.onrender.com
+
+ //--Link to run the prototype video--//
+ .venv/bin/python3 run_simulation.py
+
+ //--Tech_Stack--//
+ Python - 3.9+
+ Uvicorn
+ Pydantic v2
+ OpenCV
+ NetworkX
+ Python & FastAPI
+ HTML5 & JavaScript
+ Pytest
+ Render
+ Vercel
